@@ -1,0 +1,65 @@
+---
+
+- name: Load usbip modules into kernel
+  modprobe:
+    name:  '{{ item }}'
+    state: present
+  with_items: '{{ usbip_server__kernel_modules }}'
+
+- name: Ensure modules are loaded on boot
+  copy:
+    dest:    '/etc/modules-load.d/{{ item }}.conf'
+    content: '{{ item }}'
+  with_items: '{{ usbip_server__kernel_modules }}'
+  when: ansible_service_mgr == 'systemd'
+
+- name: Install systemd service configuration
+  template:
+    src:  service.environment.j2
+    dest: '{{ usbip_server__service_environment }}'
+  when: usbip_server__service_environment is defined
+  notify: [ 'restart-usbip-server' ]
+
+- name: List exportable devices
+  command: /usr/bin/env usbip list --parsable --local
+  register: _usbip_server__exportables
+  changed_when: False
+  check_mode: False
+
+- name: Create list of exportable devices
+  set_fact:
+    _usbip_server__exportable_devices: "{{ _usbip_server__exportable_devices|d({})|combine({
+                                              item|regex_replace('^.*#usbid=(?P<usbid>[0-9a-fA-F:]+)#$', '\\g<usbid>'): item|regex_replace('^busid=(?P<busid>[0-9\\.-]+)#.*$', '\\g<busid>')
+                                            }) }}"
+  with_items: '{{ _usbip_server__exportables.stdout_lines }}'
+
+- name: Check if required devices are available
+  fail:
+    msg: "The usbdevice '{{ item }}' is not exportable because not available on server"
+  when: item not in _usbip_server__exportable_devices.keys()
+  with_items: '{{ usbip_server__export_devices }}'
+
+- name: Install usbip devices configuration
+  template:
+    src:  usbip.config.j2
+    dest: '{{ usbip_server__configuration_file }}'
+  notify: ['reload-usbip-server']
+
+- name: Create custom scripts directory
+  file:
+    path:  '{{ usbip_server__custom_scripts_directory }}'
+    owner: root
+    group: root
+    mode:  0755
+    state: directory
+
+- name: Install usbip custom scripts
+  template:
+    src:   '{{ item }}.j2'
+    dest:  '{{ usbip_server__custom_scripts_directory }}/{{ item }}'
+    owner: root
+    group: root
+    mode:  0755
+  with_items:
+    - export-devices.sh
+  notify: ['reload-usbip-server']

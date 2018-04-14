@@ -1,0 +1,23 @@
+[Unit]
+Description=USB/IP server daemon
+Documentation=man:usbipd(8)
+Documentation=http://usbip.sourceforge.net/
+After=network.target
+
+[Service]
+Type=simple
+{% if usbip_server__service_environment is defined %}
+EnvironmentFile={{ usbip_server__service_environment }}
+{% endif %}
+PIDFile={{ usbip_server__service_pidfile }}
+
+ExecStart={{ usbip_server__service_executable }} --ipv4 --pid {{ usbip_server__service_pidfile }} --tcp-port {{ '$PORT' if usbip_server__service_environment is defined else usbip_server__listen_port|int }}
+# Exports devices on service start
+ExecStartPost={{ usbip_server__custom_scripts_directory }}/export-devices.sh
+# Recheck exported devices
+ExecReload={{ usbip_server__custom_scripts_directory }}/export-devices.sh
+# unbind all devices
+ExecStop={{ usbip_server__custom_scripts_directory }}/export-devices.sh --unbind
+
+[Install]
+WantedBy=multi-user.target

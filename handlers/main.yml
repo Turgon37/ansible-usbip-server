@@ -1,0 +1,22 @@
+---
+# handlers file for usbip-server
+
+- name: restart-usbip-daemon
+  service:
+    name:  '{{ usbip_server__service_name }}'
+    state: restarted
+  when: usbip_server__service_enabled|bool and usbip_server__service_restartable|bool
+  listen: restart-usbip-server
+
+- name: mark-daemon-to-restart
+  file:
+    path:  '{{ usbip_server__service_restart_stamp_file }}'
+    state: touch
+  when: usbip_server__service_enabled|bool and not usbip_server__service_restartable|bool
+  listen: restart-usbip-server
+
+- name: reload-usbip-server
+  service:
+    name:  '{{ usbip_server__service_name }}'
+    state: reloaded
+  when: usbip_server__service_enabled|bool

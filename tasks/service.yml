@@ -1,0 +1,46 @@
+---
+
+- name: Ensure systemd service directory is created
+  file:
+    path:  '{{ usbip_server__systemd_service_path|dirname }}'
+    state: directory
+  when: ansible_service_mgr == 'systemd'
+
+- name: Install systemd service configuration
+  template:
+    src:  systemd.service.j2
+    dest: '{{ usbip_server__systemd_service_path }}'
+  when: ansible_service_mgr == 'systemd'
+  notify: [ 'restart-usbip-server' ]
+  register: _usbip_server__service
+
+- name: Reload systemd
+  systemd:
+    daemon_reload: yes
+  when: ansible_service_mgr == 'systemd' and _usbip_server__service is changed
+
+- meta: flush_handlers
+
+- name: Ensure Usbip daemon is started and enabled on boot
+  service:
+    name:    '{{ usbip_server__service_name }}'
+    enabled: '{{ usbip_server__service_enabled|bool }}'
+    state:   "{{ usbip_server__service_enabled|bool|ternary('started', 'stopped') }}"
+
+# restart feature
+- name: Test if USBIPD need to be restart
+  stat:
+    path: '{{ usbip_server__service_restart_stamp_file }}'
+  register: _usbip_server__restart_file
+  check_mode: False
+
+- name: Trigger restart of USBIPD if needed and allowed
+  command: /bin/true
+  when: usbip_server__service_enabled|bool and usbip_server__service_restartable|bool and _usbip_server__restart_file.stat.exists
+  notify: [ 'restart-usbip-server' ]
+
+- name: Remove stamp file if USBIP daemon is disabled
+  file:
+    path:  '{{ usbip_server__service_restart_stamp_file }}'
+    state: absent
+  when: not usbip_server__service_enabled|bool

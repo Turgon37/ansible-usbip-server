@@ -1,0 +1,54 @@
+---
+# defaults file for usbip-server
+
+# The name of the usbip packages
+usbip_server__packages_names:
+  - usbip
+
+# Fetch packages from backports for Debian families only
+usbip_server__packages_use_backports: False
+
+# List of kernel modules to keep loaded
+usbip_server__kernel_modules:
+  - usbip-core
+  - usbip-host
+
+# Usbip custom scripts configuration file
+usbip_server__configuration_file: /etc/usbip-exports.conf
+
+# Where to store custom scripts
+usbip_server__custom_scripts_directory: /opt/usbip-server
+
+
+### Service configuration
+# The path to the systemd service definition file
+usbip_server__systemd_service_path: '/etc/systemd/system/{{ usbip_server__service_name }}.service'
+
+# Path to optionnal environment file
+#usbip_server__service_environment:
+
+# The name of the systemd mariadb service
+usbip_server__service_name: usbipd
+
+# If true the mariadb service will be started and enabled
+usbip_server__service_enabled: True
+
+# If this is set to true, ansible will automatically restart mariadb daemon on changes
+usbip_server__service_restartable: True
+
+# Path to the must restart stamp file
+usbip_server__service_restart_stamp_file: '/var/local/usbip-server-must-restart-stamp'
+
+# Full path to usbipd binary
+usbip_server__service_executable: /usr/sbin/usbipd
+
+# Path where to store pidfile
+usbip_server__service_pidfile: /var/run/usbipd.pid
+
+
+### USBIP configuration
+# Port on which the daemon will listen
+usbip_server__listen_port: 3240
+
+# List of device vendor id device id to exports
+usbip_server__export_devices: []

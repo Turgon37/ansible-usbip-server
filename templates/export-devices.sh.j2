@@ -1,0 +1,116 @@
+#!/usr/bin/env bash
+
+DEBUG=0
+VERBOSE=0
+ACTION=bindAll
+
+# Print a msg to stdout if simple verbose is set
+# param[in](string) : the msg to write in stdout
+function verbose() {
+  if [[ "${VERBOSE}" -eq 1 ]]; then
+    echo -e "$@"
+  fi
+}
+
+function debug() {
+  if [[ "${DEBUG}" -eq 1 ]]; then
+    echo -e "DEBUG: $@"
+  fi
+}
+
+# Print a msg to stderr
+# param[in](string) : the msg to write in stderr
+function error() {
+  echo "ERROR: $@" 1>&2
+}
+
+
+# Bind all configured devices
+function action_bindAll() {
+  # loop over each manually configured devices
+  for device in $DEVICES; do
+    # check availability
+    if ! echo "$available_devices" | grep --quiet "$device"; then
+      error "the device ${device} does not exists locally"
+      exit 1
+    fi
+    # check export status
+    if echo "$exported_devices" | grep --quiet "$device"; then
+      verbose "the device ${device} is already exported"
+      continue
+    fi
+
+    # bind
+    busid=$(echo "$available_devices" | grep "$device" | sed 's/busid=\([0-9\.-]\+\).*$/\1/')
+    verbose "exporting device ${device} with busid ${busid}  ..."
+    usbip bind "--busid=${busid}"
+    ret=$?
+    if [[ "${ret}" -eq 0 ]]; then
+      verbose "...ok"
+    else
+      error "during bind, code : ${ret}"
+    fi
+  done
+}
+
+function action_unbindAll() {
+  local export_device_busids=$(echo "$exported_devices" | sed 's/\s*\([0-9\.-]\+\):.*$/\1/')
+  for busid in $export_device_busids; do
+    verbose "unbinding device with busid ${busid}  ..."
+    usbip unbind "--busid=${busid}"
+    ret=$?
+    if [[ "${ret}" -eq 0 ]]; then
+      verbose "...ok"
+    else
+      error "during unbind, code : ${ret}"
+    fi
+  done
+}
+
+
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --unbind)
+      ACTION='unbindAll'
+      shift 1
+      ;;
+    -v|--verbose)
+      VERBOSE=1
+      shift 1
+      ;;
+    --debug)
+      VERBOSE=1
+      DEBUG=1
+      shift 1
+      ;;
+    --)
+      shift 1
+      arguments=$@
+      break;
+      ;;
+    *)    # unknown option
+      error "error unknown option $1"
+      exit 1
+      ;;
+  esac
+done
+
+# Main
+
+# Source devices configurations
+. /etc/usbip-exports.conf
+
+available_devices=$(/usr/bin/env usbip list --parsable --local)
+exported_devices=$(usbip list --parsable --remote=127.0.0.1 | grep --extended-regexp '^\s+[0-9\.-]+:')
+
+debug "available devices : $available_devices"
+debug "exported devices : $exported_devices"
+
+if declare -f -F "action_${ACTION}" >/dev/null; then
+  action_${ACTION}
+else
+  error "function action_${ACTION} does not exist"
+  exit 2
+fi
+
+exit 0
