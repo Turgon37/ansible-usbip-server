@@ -13,13 +13,6 @@
   with_items: '{{ usbip_server__kernel_modules }}'
   when: ansible_service_mgr == 'systemd'
 
-- name: Install systemd service configuration
-  template:
-    src:  service.environment.j2
-    dest: '{{ usbip_server__service_environment }}'
-  when: usbip_server__service_environment is defined
-  notify: [ 'restart-usbip-server' ]
-
 - name: List exportable devices
   command: /usr/bin/env usbip list --parsable --local
   register: _usbip_server__exportables
@@ -38,6 +31,13 @@
     msg: "The usbdevice '{{ item }}' is not exportable because not available on server"
   when: item not in _usbip_server__exportable_devices.keys()
   with_items: '{{ usbip_server__export_devices }}'
+
+- name: Install systemd service environment
+  template:
+    src:  service.environment.j2
+    dest: '{{ usbip_server__service_environment }}'
+  when: usbip_server__service_environment is defined
+  notify: [ 'restart-usbip-server' ]
 
 - name: Install usbip devices configuration
   template:

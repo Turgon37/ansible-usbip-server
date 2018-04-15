@@ -101,7 +101,7 @@ done
 . {{ usbip_server__configuration_file }}
 
 available_devices=$(/usr/bin/env usbip list --parsable --local)
-exported_devices=$(usbip list --parsable --remote=127.0.0.1 | grep --extended-regexp '^\s+[0-9\.-]+:')
+exported_devices=$(/usr/bin/env usbip list --parsable --remote=127.0.0.1 | grep --extended-regexp '^\s+[0-9\.-]+:')
 
 debug "available devices : $available_devices"
 debug "exported devices : $exported_devices"
