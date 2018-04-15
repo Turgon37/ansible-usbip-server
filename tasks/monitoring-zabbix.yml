@@ -1,0 +1,15 @@
+---
+
+- name: Configure zabbix userparameters available by vcgencmd
+  include_role:
+    name: zabbix-agent
+    tasks_from: userparameter
+  vars:
+    zabbix_agent__userparameter:
+      name: usbip
+      userparameters:
+        - key: usbip.missing_devices
+          command: /usr/bin/env bash -c 'source /etc/usbip-exports.conf && exported_devices=$(usbip list --p.0.0.1) && for device in $DEVICES; do if ! echo "${exported_devices}" | grep --quiet "${device}"; then echo -n "${device} "; fi; done'
+          comment: Get list of missing exported usb devices ids
+      state: present
+  tags: ['usbip-server', 'usbip-server-monitoring']

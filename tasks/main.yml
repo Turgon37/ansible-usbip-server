@@ -27,6 +27,6 @@
 - import_tasks: service.yml
   tags: ['usbip-server', 'usbip-server-service']
 
-#- include_tasks: export-devices.yml
-  #when: usbip__mode == 'server' and usbip__service_enabled|bool
-  #tags: ['usbip', 'usbip-export-devices']
+- include_tasks: 'monitoring-{{ usbip_server__monitoring }}.yml'
+  when: usbip_server__monitoring is defined
+  tags: ['usbip-server', 'usbip-server-monitoring']

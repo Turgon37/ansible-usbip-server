@@ -1,6 +1,9 @@
 ---
 # defaults file for usbip-server
 
+# Choose the monitoring backend to configure (if available)
+#usbip_server__monitoring:
+
 # The name of the usbip packages
 usbip_server__packages_names:
   - usbip
