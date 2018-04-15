@@ -30,10 +30,10 @@ usbip_server__systemd_service_path: '/etc/systemd/system/{{ usbip_server__servic
 # Path to optionnal environment file
 #usbip_server__service_environment:
 
-# The name of the systemd mariadb service
+# The name of the systemd service
 usbip_server__service_name: usbipd
 
-# If true the mariadb service will be started and enabled
+# If true the service will be started and enabled
 usbip_server__service_enabled: True
 
 # If this is set to true, ansible will automatically restart mariadb daemon on changes
